@@ -7,5 +7,5 @@ dependencies:
   - pip:
     - nbgitpuller
     - sphinx-gallery
-    - pandas
+    #- pandas
     - matplotlib
