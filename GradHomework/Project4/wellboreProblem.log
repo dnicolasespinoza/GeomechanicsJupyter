@@ -1,0 +1,503 @@
+-- FreeFem++ v  3.610001 (date jeu. 12 juil. 2018 15:05:23)
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : //WP4
+    2 : //Advanced Geomechanics
+    3 : //John D'Angelo
+    4 : //University of Texas at Austin
+    5 : //Derived from program by Professor Espinoza and Igor Shovkun
+    6 :
+    7 : //Wellbore Problem
+    8 :
+    9 : //--------------------------------------------------------------------
+   10 : // Dimensions
+   11 : real ySize = .5 ;  // y-size of the domain
+   12 : real xSize = .5 ;  // x-size of the domain
+   13 : real R = 0.1 ;      // wellbore radius
+   14 :
+   15 : // Elastic constants
+   16 : real E = 1e10 ;     // Young's modulus
+   17 : real nu = 0.20 ;     // Poisson's ratio
+   18 :
+   19 : real G = E/(2*(1+nu )) ; // shear modulus
+   20 : real lambda = E*nu/((1+nu)*(1-2*nu)) ; // Lame constant
+   21 :
+   22 : //Stresses
+   23 : real Sx = 12e6 ;
+   24 : real Sy = 3e6 ;
+   25 : real Pwell = 0.0;
+   26 :
+   27 :
+   28 : //--------------------------------------------------------------------
+   29 : // First define boundaries
+   30 : border Right(t=-ySize/2,ySize/2){x=xSize/2;y=t;}
+   31 : border Top(t=xSize/2,-xSize/2){x=t;y=ySize/2;}
+   32 : border Left(t=ySize/2,-ySize/2){x=-xSize/2;y=t;}
+   33 : border Bottom(t=-xSize/2,xSize/2){x=t;y=-ySize/2;}
+   34 : border Well(t=0,-2*pi){x=R*cos(t);y=R*sin(t);}
+   35 :
+   36 : //SHOW DOMAIN
+   37 : plot( Right(10)+Top(10)+Left(10)+Bottom(10) + Well(40), wait=true);
+   38 :
+   39 :
+   40 : //--------------------------------------------------------------------
+   41 : // Create mesh
+   42 : int n = 20; // number of mesh nodes on the outer borders
+   43 : int nwell = 50; // number of mesh nodes on wellobre
+   44 : mesh Omega = buildmesh (Right(n)+Top(n)+Left(n)+Bottom(n)+Well(nwell));
+   45 :
+   46 : plot(Omega, wait=true);
+   47 :
+   48 : // FE spaces
+   49 : fespace Displacement(Omega, P1); // linear shape functions
+   50 : fespace Stress(Omega, P0); // piecewise constants
+   51 :
+   52 : Displacement u1, u2, v1, v2;
+   53 : Stress sigmaxx, sigmayy, sigmaxy;
+   54 :
+   55 :
+   56 : //--------------------------------------------------------------------
+   57 : // definition of 2 macros :
+   58 : // macro for strain
+   65 #         ] )     dy(u2))+dy(u1))/2 ,
+   66 :         [
+   67 :                 dx(u1),
+   68 :                 (dy(u1)+dx(u2))/2 ,
+   69 :                 (dx(u2)+dy(u1))/2 ,
+   70 :                 dy(u2)
+   71 :         ]//eps_xx, eps_xy , eps_yx ,    eps_yy
+   72 : // macro for stress
+   79 #         ]  )    lambda*e(u1,u2)[0]+(lambda+2.*G)*e(u1,u2)[3],
+   80 :         [
+   81 :                 (lambda+2.*G)*e(u1,u2)[0]+lambda*e(u1,u2)[3],
+   82 :                 2.*G*e(u1,u2)[1],
+   83 :                 2.*G*e(u1,u2)[2],
+   84 :                 lambda*e(u1,u2)[0]+(lambda+2.*G)*e(u1,u2)[3]
+   85 :         ] //stress s_xx, s_xy, s_yx, s_yy
+   86 :
+   87 :
+   88 :         //      Define  system  of      equations
+   89 : problem Elasticity([u1,u2],[v1,v2]) =
+   90 :         int2d(Omega)(sigma(u1,u2)
+   74 :
+   75 :
+   76 :
+   77 :
+   78 :
+   79 :
+   74 :         [
+   75 :                 (lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3],
+   76 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][1],
+   77 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][2],
+   78 :                 lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+(lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3]
+   79 :         ] '*e(v1,v2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(v1),
+   62 :                 (dy(v1)+dx(v2))/2 ,
+   63 :                 (dx(v2)+dy(v1))/2 ,
+   64 :                 dy(v2)
+   65 :         ])
+   91 :         // Boundary conditions
+   92 :         + on(Left,u1=0)              // Dirichlet boundary conditions
+   93 :         + on(Bottom,u2=0)
+   94 :         + int1d(Omega,Right)(Sx*v1)  // Neumann boundary conditions
+   95 :                 //- int1d(Omega,Left)(Sx*v1)
+   96 :         + int1d(Omega,Top)(Sy*v2)
+   97 :                 //- int1d(Omega,Bottom)(Sy*v2)
+   98 :         + int1d(Omega,Well)(Pwell*(N.x*v1+N.y*v2))
+   99 :         ;
+  100 :
+  101 :
+  102 : //--------------------------------------------------------------------
+  103 : //      Solve system
+  104 : Elasticity;
+  105 :
+  106 :
+  107 : // Stresses
+  108 : sigmaxx = sigma(u1,u2)
+   74 :
+   75 :
+   76 :
+   77 :
+   78 :
+   79 :
+   74 :         [
+   75 :                 (lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3],
+   76 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][1],
+   77 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][2],
+   78 :                 lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+(lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3]
+   79 :         ] [0];
+  109 : sigmayy = sigma(u1,u2)
+   74 :
+   75 :
+   76 :
+   77 :
+   78 :
+   79 :
+   74 :         [
+   75 :                 (lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3],
+   76 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][1],
+   77 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][2],
+   78 :                 lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+(lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3]
+   79 :         ] [3];
+  110 : sigmaxy = sigma(u1,u2)
+   74 :
+   75 :
+   76 :
+   77 :
+   78 :
+   79 :
+   74 :         [
+   75 :                 (lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3],
+   76 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][1],
+   77 :                 2.*G*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][2],
+   78 :                 lambda*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][0]+(lambda+2.*G)*e(u1,u2)
+   60 :
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   60 :         [
+   61 :                 dx(u1),
+   62 :                 (dy(u1)+dx(u2))/2 ,
+   63 :                 (dx(u2)+dy(u1))/2 ,
+   64 :                 dy(u2)
+   65 :         ][3]
+   79 :         ] [1];  // we could     use     [2]     as      well
+  111 :
+  112 :
+  113 : //--------------------------------------------------------------------
+  114 : // plot on the deformed surface
+  115 : mesh Th=movemesh(Omega,[x+10*u1,y+10*u2]);
+  116 : plot(Th,cmm="Deformed configuration",wait=1);
+  117 :
+  118 :
+  119 : // plot the deformation field and stress
+  120 : plot([u1,u2],coef=10,cmm="Displacement field",wait=1,value=true);
+  121 : plot(sigmaxx,fill=1, cmm="Stress sigmaxx",wait=1,value=true);
+  122 : plot(sigmaxy,fill=1, cmm="Stress sigmaxy",wait=1,value=true);
+  123 : plot(sigmayy,fill=1, cmm="Stress sigmayy",wait=1,value=true);
+  124 :
+  125 :
+  126 : //write files
+  127 : ofstream ffX("output_X_2.dat");
+  128 : for(int i=0;i<100;i++) {
+  129 :         // x, y, Sxx, Syy, Sxy
+  130 :                 real xline = 0.05 + xSize*i/200.;
+  131 :                 real yline = 0*i/100.;
+  132 :         // Analytical solution
+  133 :         //write file numerical and analytical solution
+  134 :         ffX<< xline <<", "<< yline
+  135 :                 <<", "<< sigmaxx(xline,yline)
+  136 :                 <<", "<< sigmayy(xline,yline)
+  137 :                 <<", "<< sigmaxy(xline,yline)
+  138 :                 <<endl;
+  139 :         }
+  140 :
+  141 : //write files
+  142 : ofstream ffY("output_Y_2.dat");
+  143 : for(int i=0;i<100;i++) {
+  144 :         // x, y, Sxx, Syy, Sxy
+  145 :                 real xline = 0*i/100.;
+  146 :     real yline = 0.1 + ySize*i/200.;
+  147 :         // Analytical solution
+  148 :         //write file numerical and analytical solution
+  149 :         ffY<< xline <<", "<< yline
+  150 :                 <<", "<< sigmaxx(xline,yline)
+  151 :                 <<", "<< sigmayy(xline,yline)
+  152 :                 <<", "<< sigmaxy(xline,yline)
+  153 :                 <<endl;
+  154 :         }
+  155 :  sizestack + 1024 =7344  ( 6320 )
+ 
+  --  mesh:  Nb of Triangles =   1296, Nb of Vertices 713
+ kk 2 3 :   -- Solve :
+          min -0.000878954  max -1.575e-025
+          min -0.000107177  max 9.67423e-005
+times: compile 0.268s, execution 2.984s,  mpirank:0
+ ######## We forget of deleting   4679 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3764,  size :415632 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\JohnD\Desktop\GeomechanicsJupyter\GradHomework\Project4\wellboreProblem.edp

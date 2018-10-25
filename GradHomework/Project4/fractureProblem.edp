@@ -1,0 +1,156 @@
+//WP4
+//Advanced Geomechanics
+//John D'Angelo
+//University of Texas at Austin
+//Derived from program by Professor Espinoza and Igor Shovkun
+
+//Fracture Problem
+
+//Domain is symmetric so I will only simulate half of it
+
+//--------------------------------------------------------------------
+// Dimensions
+real xSize = 50. ;  // x-size of the domain
+real ySize = 100. ;  // y-size of the domain
+real c = 10. ;      // elliptical fracture half-length
+real w0 = 0.05 ;
+
+// Elastic constants
+real E = 3e10 ;     // Young's modulus
+real nu = 0.20 ;     // Poisson's ratio
+
+real G = E/(2*(1+nu )) ; // shear modulus
+real lambda = E*nu/((1+nu)*(1-2*nu)) ; // Lame constant
+
+//Stresses
+real Pfracture = 10e6;
+
+//--------------------------------------------------------------------
+// First define boundaries
+border Right(t=0,ySize){x=xSize;y=t;}
+border Top(t=xSize,0){x=t;y=ySize;}
+border L1(t=ySize,ySize-20){x=0;y=t;}
+border L2(t=ySize-20,ySize-40){x=0;y=t;}
+border L3(t=ySize-40,ySize-60){x=0;y=t;}
+border L4(t=ySize-60,ySize-80){x=0;y=t;}
+border L5(t=ySize-80,0){x=0;y=t;}
+border Bottom(t=0,xSize){x=t;y=0;}
+border Fracture(t=pi/2,-pi/2){x=w0*cos(t);y=c*sin(t)+50;}
+
+//SHOW DOMAIN
+plot( Right(10)+Top(10)+L1(10)+L2(10)+L3(10)+L4(10)+L5(10)+Bottom(10) + Fracture(40), wait=true);
+
+
+//--------------------------------------------------------------------
+// Create mesh
+int n = 20; // number of mesh nodes on the outer borders
+int nfract = 80; // number of mesh nodes on wellbore
+mesh Omega = buildmesh (Right(n)+Top(n)+L1(n)+L2(n+nfract/2)+L3(nfract)+L4(n+nfract/2)+L5(n)+Bottom(n)+Fracture(nfract));
+
+plot(Omega, wait=true);
+
+// FE spaces
+fespace Displacement(Omega, P1); // linear shape functions
+fespace Stress(Omega, P0); // piecewise constants
+
+Displacement u1, u2, v1, v2;
+Stress sigmaxx, sigmayy, sigmaxy;
+
+
+//--------------------------------------------------------------------
+// definition of 2 macros :
+// macro for strain
+macro e(u1,u2)
+	[
+		dx(u1),
+		(dy(u1)+dx(u2))/2 ,
+		(dx(u2)+dy(u1))/2 ,
+		dy(u2)
+	]//eps_xx, eps_xy , eps_yx ,	eps_yy
+
+// macro for stress
+macro sigma(u1,u2)
+	[
+		(lambda+2.*G)*e(u1,u2)[0]+lambda*e(u1,u2)[3],
+		2.*G*e(u1,u2)[1],
+		2.*G*e(u1,u2)[2],
+		lambda*e(u1,u2)[0]+(lambda+2.*G)*e(u1,u2)[3]
+	] //stress s_xx, s_xy, s_yx, s_yy
+
+
+	//	Define	system	of	equations
+problem	Elasticity([u1,u2],[v1,v2]) =
+	int2d(Omega)(sigma(u1,u2)'*e(v1,v2))
+	// Boundary conditions
+	+ on(Right,u1=0)              // Dirichlet boundary conditions
+	+ on(Bottom,u2=0)
+	+ on(Top,u2=0)
+	+on(L1,u1=0)
+	+on(L2,u1=0)
+	+on(L4,u1=0)
+	+on(L5,u1=0)
+	+ int1d(Omega,Fracture)(Pfracture*(N.x*v1+N.y*v2))
+	;
+
+
+//--------------------------------------------------------------------
+//	Solve system
+Elasticity;
+
+
+// Stresses
+sigmaxx = sigma(u1,u2)[0];
+sigmayy = sigma(u1,u2)[3];
+sigmaxy = sigma(u1,u2)[1];	// we could	use	[2]	as	well
+
+//--------------------------------------------------------------------
+// plot on the deformed surface
+mesh Th=movemesh(Omega,[x+10*u1,y+10*u2]);
+plot(Th,cmm="Deformed configuration",wait=1);
+
+
+// plot the deformation field and stress
+plot([u1,u2],coef=10,cmm="Displacement field",wait=1,value=true);
+plot(sigmaxx,fill=1, cmm="Stress sigmaxx",wait=1,value=true);
+plot(sigmaxy,fill=1, cmm="Stress sigmaxy",wait=1,value=true);
+plot(sigmayy,fill=1, cmm="Stress sigmayy",wait=1,value=true);
+
+
+//Stress perpendicular to fracture
+ofstream ffB("partb.dat");
+for(int i=0;i<100;i++) {
+	// x, y, Sxx, Syy, Sxy
+		real xline = w0 + i*xSize/100.;
+		real yline = 50. + 0*i/100.;
+	// Analytical solution
+	//write file numerical and analytical solution
+	ffB<< xline <<", "<< yline
+		<<", "<< sigmaxx(xline,yline)
+		<<endl;
+	}
+
+//x displacement at face of fracture
+ofstream ffC("partc.dat");
+for(int i=-25;i<25;i++) {
+	// x, y, Sxx, Syy, Sxy
+		real xline = w0*cos(i*(2.*3.1415/100.));
+		real yline = 50. + c*sin(i*(2.*3.1415/100.));
+	// Analytical solution
+	//write file numerical and analytical solution
+	ffC<< xline <<", "<< yline
+		<<", "<< u1(xline,yline) <<", "<< u2(xline,yline)
+		<<endl;
+	}
+
+//Stress perpendicular to fracture
+ofstream ffD("partd.dat");
+for(int i=0;i<100;i++) {
+	// x, y, Sxx, Syy, Sxy
+		real xline = 0*i/100.;
+		real yline = (c)+50 + i*(50.-(c))/100.;
+	// Analytical solution
+	//write file numerical and analytical solution
+	ffD<< xline <<", "<< yline
+		<<", "<< sigmaxx(xline,yline)
+		<<endl;
+	}
