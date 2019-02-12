@@ -1,1 +1,1 @@
-This folder contains the solution of homework for PGE 334 in jupyter files.
+This folder contains files for the homework of PGE 334 - Spring 2019.
