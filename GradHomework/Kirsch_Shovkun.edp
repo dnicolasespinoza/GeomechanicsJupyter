@@ -1,0 +1,118 @@
+//--------------------------------------------------------------------
+// Dimensions
+real ySize = 10. ;  // y-size of the domain
+real xSize = 10. ;  // x-size of the domain
+real R = 0.1 ;      // wellbore radius
+
+// Elastic constants
+real E = 1e10 ;     // Young's modulus
+real nu = 0.3 ;     // Poisson's ratio
+
+real G = E/(2*(1+nu )) ; // shear modulus
+real lambda = E*nu/((1+nu)*(1-2*nu)) ; // Lame constant
+
+//Stresses
+real Sx = 10e6 ;
+real Sy = 10e6 ;
+real Pwell = 1.0e6;
+
+
+//--------------------------------------------------------------------
+// First define boundaries 
+border Right(t=-ySize/2,ySize/2){x=xSize/2;y=t;}
+border Top(t=xSize/2,-xSize/2){x=t;y=ySize/2;}
+border Left(t=ySize/2,-ySize/2){x=-xSize/2;y=t;}
+border Bottom(t=-xSize/2,xSize/2){x=t;y=-ySize/2;} 
+border Well(t=0,-2*pi){x=R*cos(t);y=R*sin(t);}
+
+//SHOW DOMAIN
+plot( Right(10)+Top(10)+Left(10)+Bottom(10) + Well(40), wait=true);
+
+
+//--------------------------------------------------------------------
+// Create mesh 
+int n = 20; // number of mesh nodes on the outer borders 
+int nwell = 50; // number of mesh nodes on wellbore 
+mesh Omega = buildmesh (Right(n)+Top(n)+Left(n)+Bottom(n)+Well(nwell));
+
+plot(Omega, wait=true);
+
+// FE spaces 
+fespace Displacement(Omega, P1); // linear shape functions 
+fespace Stress(Omega, P0); // piecewise constants
+
+Displacement u1, u2, v1, v2;
+Stress sigmaxx, sigmayy, sigmaxy;
+
+
+//--------------------------------------------------------------------
+// definition of 2 macros : 
+// macro for strain 
+macro e(u1,u2)
+	[
+		dx(u1),
+		(dy(u1)+dx(u2))/2 ,
+		(dx(u2)+dy(u1))/2 , 
+		dy(u2)
+	]//eps_xx, eps_xy , eps_yx , eps_yy
+// macro for stress 
+macro sigma(u1,u2)
+	[
+		(lambda+2.*G)*e(u1,u2)[0]+lambda*e(u1,u2)[3],
+		2.*G*e(u1,u2)[1],
+		2.*G*e(u1,u2)[2],
+		lambda*e(u1,u2)[0]+(lambda+2.*G)*e(u1,u2)[3]
+	] //stress s_xx, s_xy, s_yx, s_yy
+
+	
+	//	Define	system	of	equations 
+problem	Elasticity([u1,u2],[v1,v2]) = 
+	int2d(Omega)(sigma(u1,u2)'*e(v1,v2)) 
+	// Boundary conditions
+	+ on(Left,u1=0)              // Dirichlet boundary conditions
+	+ on(Bottom,u2=0)
+	+ int1d(Omega,Right)(Sx*v1)  // Neumann boundary conditions
+		//- int1d(Omega,Left)(Sx*v1)
+	+ int1d(Omega,Top)(Sy*v2)
+		//- int1d(Omega,Bottom)(Sy*v2)
+	+ int1d(Omega,Well)(Pwell*(N.x*v1+N.y*v2))
+	;
+
+	
+//--------------------------------------------------------------------	
+//	Solve system
+Elasticity;
+
+
+// Stresses 
+sigmaxx = sigma(u1,u2)[0];
+sigmayy = sigma(u1,u2)[3]; 
+sigmaxy = sigma(u1,u2)[1];	// we could	use	[2]	as	well
+
+
+//--------------------------------------------------------------------
+// plot on the deformed surface
+mesh Th=movemesh(Omega,[x+10*u1,y+10*u2]);
+plot(Th,cmm="Deformed configuration",wait=1);
+
+
+// plot the deformation field and stress
+plot([u1,u2],coef=10,cmm="Displacement field",wait=1,value=true);
+plot(sigmaxx,fill=1, cmm="Stress sigmaxx",wait=1,value=true);
+
+
+//write files
+ofstream ff("output.dat");
+for(int i=0;i<100;i++) {
+	// x, y, Sxx, Syy, Sxy
+		real xline = -xSize/2 + xSize*i/100.;
+		real yline = 0*i/100.;
+	// Analytical solution
+	//write file numerical and analytical solution
+	ff<< xline <<", "<< yline 
+		<<", "<< sigmaxx(xline,yline)
+		<<", "<< sigmayy(xline,yline)
+		<<", "<< sigmaxy(xline,yline) 
+		<<endl;
+	}
+

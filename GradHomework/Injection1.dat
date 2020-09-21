@@ -1,0 +1,270 @@
+***************************************************************************************
+** MODEL:  SINGLE WELL                                      FIELD UNITS             **
+** RESERVOIR REGION                                 21x21x10 CARTESIAN GRID    **
+** GEOMECHANICS REGION                              21x21x10 CARTESIAN GRID    **
+
+** The purpose of this problem is to demostrate how the pore pressure changes during depletion and the effect of Biot coefficient to the pore pressure.      **
+** Features:                                                                      **
+** **
+** This problem is based on the problem 1 in SPE 79709 by Dean et al.             **
+** ************************************************************************************
+** ==============  INPUT/OUTPUT CONTROL  ======================
+
+RESULTS SIMULATOR GEM 201410
+
+
+*TITLE1 'GEM Geomechanics Coupling'
+*TITLE2 'Pore pressure evolution upon reservoir depletion'
+*TITLE3 'Biot coefficient'
+
+*INUNIT  *FIELD
+
+*WPRN *GRID *TIME
+*OUTPRN *GRID *IMPL *VPOROSGEO 
+*WSRF *GRIDDEFORM  2              ** keyword to output grid deformation
+*WSRF *GRID 10
+*OUTSRF *GRID *POROS *PRES *YOUNG *POISSON *VDISPL *STRESSH *TSTRESI *TSTRESJ *TSTRESK *STRESEFF *VPOROSGEO *SW 
+*OUTSRF *WELL  *PRES 11 11 7 / 2 2 1
+
+WRST TIME
+
+** ========= DEFINITION OF FUNDAMENTAL CARTESIAN GRID ==========
+
+*GRID *CART 21 21 10 
+*DI *CON 50
+*DJ *CON 50
+*DK *CON 10
+
+*KDIR *DOWN
+
+*REFINE  11:11 11:11 1:10 *INTO 3 3 1
+**  0 = null block, 1 = active block
+NULL CON            1
+*DTOP 441*1000 **top depth
+
+*CROCKTYPE 1
+*CP-ROCK  0.25
+*THCONR0  2
+
+ *CTYPE *KVAR 10*1
+
+*POR  *CON 0.20 **porosity is constant as 0.2
+*PERMI *CON 50.0 **permeability is constant as 50 mD entire reservoir
+PERMJ EQUALSI * 1 **permeability in J direction is equal to the perm in I direction
+*PERMK *CON 50.0 **permeability (mD)
+
+
+PINCHOUTARRAY CON            1
+
+*CPOR  1.0E-6   
+*PRPOR 300 
+
+*END-GRID
+
+
+*TRPOR 60. **F reference temperature used in calculation of thermal expansion by geomechanics module
+*CTPOR 2.70E-6 **1/F thermal expansion coefficient of the formaition (CPTPOR (1/psi-F)- pressure temperature cross-term coefficient)
+**  ==============  FLUID DEFINITIONS  ======================
+
+*MODEL   *PR
+
+*NC    1    1
+*TRES        250.000 **reservoir temperature
+*COMPNAME
+           'HC30'
+*SG         7.8638000E-01
+*TB         6.5183250E+02
+*PCRIT      1.1003743E+01
+*VCRIT      1.1757000E+00
+*TCRIT      7.6715000E+02
+*AC         1.0000000E+00
+*MW         4.0000000E+02
+*HCFLAG     0
+*VSHIFT     0.0000000E+00
+*VISCOR *HZYT
+*MIXVC      1.0000000E+00
+*VISVC      1.1757000E+00
+*VISCOEFF   1.0230000E-01  2.3364000E-02  5.8533000E-02 -4.0758000E-02
+            9.3324000E-03
+*OMEGA      4.5723553E-01
+*OMEGB      7.7796074E-02
+*PCHOR      9.2860000E+02
+
+*ENTHCOEF
+            0.0000000E+00  2.6300600E-02  3.9898700E-04 -5.1310000E-08
+            0.0000000E+00  0.0000000E+00
+
+*DENW  62.4
+*DENWS 62.4
+*CW    4.5E-7
+*REFPW 14.7
+
+
+**  ==============  ROCK-FLUID PROPERTIES  ======================
+
+*ROCKFLUID
+
+*RPT 1
+
+*SWT   **  Water-oil relative permeabilities
+
+**    Sw        Krw       Krow
+**  ------    ------    -------
+    0.265     0.0        1.0
+    0.3292    0.0006     0.9
+    0.3875    0.0017     0.685
+    0.4458    0.005      0.49
+    0.5042    0.011      0.325
+    0.545     0.018      0.215
+    0.5917    0.056      0.1
+    0.6208    0.1        0.043
+    0.685     0.16       0.0
+    1.0       1.0        0.0
+
+*SLT   **  Liquid-gas relative permeabilities
+
+**   Sl         Krg       Krog
+**  ----      ------     -------
+
+    0.5        1.00       0.0
+    0.95       0.0        0.75
+    1.0        0.0        1.0
+
+**  ==============  INITIAL CONDITIONS  ======================
+*INITIAL
+*VERTICAL *DEPTH_AVE *WATER_OIL *EQUIL
+*ZOIL 1.0 **normalized the fluid component
+
+REFPRES 
+  200
+
+REFDEPTH 
+  1000
+
+DWOC 
+  900
+
+SWOC 
+  0.99999
+*TEMPER *CON 250
+
+** ================ NUMERICAL CONTROL ===================
+*NUMERICAL
+*DTMAX  0.1
+*NORM *PRESS 10
+*NORM *SATUR 0.1
+*MAXCHANGE *PRESS 10.
+*CONVERGE *PRESS 1.E-06
+*PRECC 1.E-05
+*NORTH 80
+*ITERMAX 100
+*AIM *STAB *AND-THRESH 1 0.001
+**  ==============  GEOMECHANIC MODEL  ======================
+*GEOMECH
+*GEOM3D
+*GCOUPLING 2 
+*GPTOLMUL 0.5 
+*GEOGRID *GCART  21 21 10
+*GDI  *GIVAR   21*50  **geomech domain 
+*GDJ  *GJVAR   21*50 
+*GDK  *GKVAR   10*10
+
+*GOUTSRF *GGRID *PRES *STRAINVOL *SAFACTOR
+** GTRANSLI -1000.0        ** no need to move the geomech domain Translation along the I direction
+**GTRANSLJ -1000.0        ** Translation along the J direction
+**GTRANSLK -1000.0
+*GEODEPTH  *GTOP 1 1 1   1000 
+** constrain the host grid in full (*ALL) or part (*IJK)
+*RCONBT *ALL ** On the bottom 
+*RCONLF *ALL ** On the left
+*RCONRT *ALL ** On the right
+*RCONBK *ALL ** On the back
+*RCONFT *ALL ** On the front
+
+** Note: The yielding stress has a high value to avoid plastics occuring.
+** Young modulus   Poisson's ratio   Yielding stress
+
+
+GEOROCK 1
+
+MOHRCOUL
+POISSRATIO 0.3
+ELASTMOD 1.45e6
+BIOTSCOEF 1.0
+
+
+*GEOTYPE   *IJK
+**         i      j       k    rocktype
+        
+           1:21    1:21   1:10     1     
+
+
+
+**real stress distribution
+*DLOADBC3D
+*IJK 1:21 1:21 1 **top
+** node1 node2 node3 node4 load
+	1 		2 	  3	 	4 	70 **1 tonf/m2 = 13.88 psi **Constant vertical stress 70*13.88 = 971.6 psi
+
+
+*GOUTSRF  GGRID ALL 
+
+** ===================RECURRENT DATA ================
+*RUN
+
+*DATE 2000 12 31
+
+   *DTWELL 0.005
+** 
+
+	
+WELL  'INJ4'
+**wdepth wlength rel_rough wellboretemp restemp wradius
+
+
+INJECTOR 'INJ4'
+   INCOMP  WATER
+OPERATE  MAX  STW  100.0  CONT REPEAT
+OPERATE  MAX  BHP  500.0  CONT REPEAT
+**          rad  geofac  wfrac  skin
+GEOMETRY  K  0.25  0.249  1.0  0.0
+      PERF       GEO  'INJ4'
+** UBA                       ff          Status  Connection  
+    11 11 6 / 2 2 1         1.0  OPEN    FLOW-TO  'SURFACE'  REFLAYER
+    11 11 7 / 2 2 1         1.0  OPEN    FLOW-TO  1
+    11 11 8 / 2 2 1         1.0  OPEN    FLOW-TO  2
+
+   *WELLINIT *ITER  
+*TIME 0.5
+*TIME 1
+*TIME 2
+*TIME 3
+*TIME 4
+*TIME 5
+*TIME 6
+*TIME 7
+*TIME 8
+*TIME 9
+*TIME	10
+*TIME	20
+*TIME	30
+*TIME	40
+*TIME	50
+*TIME	60
+*TIME	70
+*TIME	80
+*TIME	90
+*TIME	100
+
+*STOP
+
+RESULTS SPEC 'Permeability J'  
+RESULTS SPEC SPECNOTCALCVAL -99999      
+RESULTS SPEC REGION 'All Layers (Whole Grid)'
+RESULTS SPEC REGIONTYPE 'REGION_WHOLEGRID'
+RESULTS SPEC LAYERNUMB 0
+RESULTS SPEC PORTYPE 1
+RESULTS SPEC EQUALSI 1 1           
+RESULTS SPEC SPECKEEPMOD 'YES'
+RESULTS SPEC STOP
+
