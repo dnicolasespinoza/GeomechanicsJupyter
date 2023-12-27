@@ -4,16 +4,10 @@ List of updates:
 - 2023/12/27: Python examples available in google colab
 
 Animation Examples:
-Total vertical stress
-https://mybinder.org/v2/gh/dnicolasespinoza/GeomechanicsJupyter/master?filepath=PorePressureVerticalStress_Widget.ipynb
-https://colab.research.google.com/drive/13ZkAcpoweTpbSXzGOPp61hGOau5iXfgu?usp=sharing
-
-
-Tectonic stresses
-https://mybinder.org/v2/gh/dnicolasespinoza/GeomechanicsJupyter/master?filepath=HorizontalStresses_Widget.ipynb
-
-Kirsch solution
-https://mybinder.org/v2/gh/dnicolasespinoza/GeomechanicsJupyter/master?filepath=Kirsch_Widget.ipynb
-
-Thomsen parameters
-https://mybinder.org/v2/gh/dnicolasespinoza/GeomechanicsJupyter/master?filepath=ThomsenWidget.ipynb
+(Fundamentals)
+- Total vertical stress, https://colab.research.google.com/drive/13ZkAcpoweTpbSXzGOPp61hGOau5iXfgu?usp=sharing
+- Tectonic stresses, https://colab.research.google.com/drive/1422fqt5m7MXtraXWJBw1o1sRQRygFxtc?usp=sharing
+- Kirsch solution, https://colab.research.google.com/drive/1O6nl4ZSwS0AGH-KepaA49M940Tke9P5Z?usp=sharing
+(Advanced)
+- Thomsen parameters, https://colab.research.google.com/drive/1WyC6h3B0_3Jzk_QTFZZew4pbkZXZFh_8?usp=sharing
+- Segall's subsidence, https://colab.research.google.com/drive/14h0p9OXNKYRhvosn75P0jPlSPzMFgA_w?usp=sharing
